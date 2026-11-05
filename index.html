@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <title>Traffic Light Simulator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #101820;
+      color: #f5f2eb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #9daab2;
+      --panel: #18242d;
+      --line: #2a3943;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 18% 15%, rgba(32, 74, 79, .28), transparent 38%),
+        radial-gradient(ellipse at 88% 82%, rgba(94, 60, 35, .18), transparent 35%),
+        #101820;
+    }
+
+    main {
+      width: min(100% - 40px, 960px);
+      margin: 0 auto;
+      padding: 54px 0 42px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #80d5c1;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      letter-spacing: -.045em;
+      line-height: 1.05;
+    }
+
+    .intro {
+      max-width: 540px;
+      margin: 14px 0 34px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .simulator {
+      display: grid;
+      grid-template-columns: minmax(250px, .85fr) minmax(300px, 1.15fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .signal-panel, .settings-panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(24, 36, 45, .92);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, .22);
+    }
+
+    .signal-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 26px 24px 24px;
+    }
+
+    .signal {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      padding: 18px;
+      border: 1px solid #49545a;
+      border-radius: 32px;
+      background: linear-gradient(145deg, #303a3e, #171d20 72%);
+      box-shadow: inset 0 3px 8px rgba(255,255,255,.09), 0 13px 25px rgba(0,0,0,.4);
+    }
+
+    .lamp {
+      display: grid;
+      width: 82px;
+      height: 82px;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 50%;
+      background: #252b2e;
+      color: rgba(255,255,255,.24);
+      transition: background-color .25s ease, box-shadow .25s ease, color .25s ease;
+    }
+
+    .lamp.red.active { background: #f2484b; color: white; box-shadow: 0 0 10px #f2484b, 0 0 32px rgba(242,72,75,.7), inset 0 2px 6px rgba(255,255,255,.55); }
+    .lamp.yellow.active { background: #f5c84b; color: #fffdf5; box-shadow: 0 0 10px #f5c84b, 0 0 32px rgba(245,200,75,.7), inset 0 2px 6px rgba(255,255,255,.55); }
+    .lamp.green.active { background: #47cb83; color: white; box-shadow: 0 0 10px #47cb83, 0 0 32px rgba(71,203,131,.65), inset 0 2px 6px rgba(255,255,255,.55); }
+
+    .signal-status {
+      margin: 23px 0 0;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .signal-status strong {
+      color: #f5f2eb;
+      font-size: 1.05rem;
+      letter-spacing: .04em;
+    }
+
+    .countdown {
+      margin: 7px 0 0;
+      font-variant-numeric: tabular-nums;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .countdown small {
+      color: var(--muted);
+      font-size: .85rem;
+      font-weight: 500;
+    }
+
+    .progress-track {
+      width: min(100%, 230px);
+      height: 5px;
+      margin-top: 15px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: #2a3943;
+    }
+
+    .progress {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: #80d5c1;
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+
+    .settings-panel { padding: 25px; }
+
+    .section-heading {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -.02em;
+    }
+
+    .section-note {
+      margin: 7px 0 20px;
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+
+    .duration-list { display: grid; gap: 11px; }
+
+    .duration-row {
+      display: grid;
+      grid-template-columns: 1fr 112px;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(9, 17, 22, .3);
+    }
+
+    .duration-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .95rem;
+      font-weight: 600;
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .color-dot.red { background: #f2484b; }
+    .color-dot.yellow { background: #f5c84b; }
+    .color-dot.green { background: #47cb83; }
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    input[type="number"] {
+      width: 70px;
+      padding: 8px 7px;
+      border: 1px solid #40515c;
+      border-radius: 8px;
+      outline: none;
+      background: #101820;
+      color: #f5f2eb;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    input[type="number"]:focus-visible, button:focus-visible {
+      outline: 2px solid #80d5c1;
+      outline-offset: 3px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 0 17px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: .9rem;
+      font-weight: 700;
+      transition: transform .15s ease, background-color .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    .primary { flex: 1; background: #80d5c1; color: #10211f; }
+    .primary:hover { background: #9be4d3; }
+    .secondary { border-color: #40515c; background: transparent; color: #e4e9e9; }
+    .secondary:hover { background: #25343e; }
+
+    .cycle-note {
+      margin: 17px 0 0;
+      color: var(--muted);
+      font-size: .8rem;
+      text-align: center;
+    }
+
+    @media (max-width: 680px) {
+      main { width: min(100% - 28px, 480px); padding-top: 34px; }
+      .intro { margin-bottom: 24px; }
+      .simulator { grid-template-columns: 1fr; }
+      .signal-panel { padding: 20px; }
+      .lamp { width: 70px; height: 70px; }
+      .signal { gap: 10px; padding: 15px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">A simple timing simulator</p>
+    <h1>Traffic light</h1>
+    <p class="intro">Set how long each light stays on, then start the cycle. The sequence repeats red, yellow, green.</p>
+
+    <section class="simulator" aria-label="Traffic light simulation">
+      <div class="signal-panel">
+        <div class="signal" role="img" aria-label="Traffic signal">
+          <div class="lamp red" data-light="red" aria-label="Red light"></div>
+          <div class="lamp yellow" data-light="yellow" aria-label="Yellow light"></div>
+          <div class="lamp green" data-light="green" aria-label="Green light"></div>
+        </div>
+        <p class="signal-status" aria-live="polite">Current light: <strong id="activeLight">RED</strong></p>
+        <p class="countdown"><span id="timeLeft">5.0</span> <small>seconds left</small></p>
+        <div class="progress-track" role="progressbar" aria-label="Current light time remaining" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress" id="progress"></div>
+        </div>
+      </div>
+
+      <div class="settings-panel">
+        <h2 class="section-heading">Timing settings</h2>
+        <p class="section-note">Choose a duration from 0.5 to 120 seconds for each light.</p>
+        <div class="duration-list">
+          <label class="duration-row" for="redDuration">
+            <span class="duration-label"><span class="color-dot red"></span>Red</span>
+            <span class="input-wrap"><input id="redDuration" type="number" min="0.5" max="120" step="0.5" value="5" inputmode="decimal"><span>sec</span></span>
+          </label>
+          <label class="duration-row" for="yellowDuration">
+            <span class="duration-label"><span class="color-dot yellow"></span>Yellow</span>
+            <span class="input-wrap"><input id="yellowDuration" type="number" min="0.5" max="120" step="0.5" value="2" inputmode="decimal"><span>sec</span></span>
+          </label>
+          <label class="duration-row" for="greenDuration">
+            <span class="duration-label"><span class="color-dot green"></span>Green</span>
+            <span class="input-wrap"><input id="greenDuration" type="number" min="0.5" max="120" step="0.5" value="5" inputmode="decimal"><span>sec</span></span>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="primary" id="toggleButton" type="button">Start simulation</button>
+          <button class="secondary" id="resetButton" type="button">Reset</button>
+        </div>
+        <p class="cycle-note">Changing the active light's duration restarts its countdown.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const colors = ["red", "yellow", "green"];
+    const durationInputs = Object.fromEntries(
+      colors.map((color) => [color, document.getElementById(`${color}Duration`)])
+    );
+    const lamps = [...document.querySelectorAll("[data-light]")];
+    const activeLight = document.getElementById("activeLight");
+    const timeLeft = document.getElementById("timeLeft");
+    const progress = document.getElementById("progress");
+    const progressTrack = document.querySelector(".progress-track");
+    const toggleButton = document.getElementById("toggleButton");
+    let activeIndex = 0;
+    let running = false;
+    let remainingMs = getDuration(colors[activeIndex]);
+    let deadline = 0;
+    let intervalId = null;
+
+    function getDuration(color) {
+      return Number(durationInputs[color].value) * 1000;
+    }
+
+    function render() {
+      const color = colors[activeIndex];
+      const duration = getDuration(color);
+      const remaining = running ? Math.max(0, deadline - Date.now()) : remainingMs;
+      lamps.forEach((lamp) => {
+        const isActive = lamp.dataset.light === color;
+        lamp.classList.toggle("active", isActive);
+      });
+      activeLight.textContent = color.toUpperCase();
+      timeLeft.textContent = (remaining / 1000).toFixed(1);
+      progress.style.transform = `scaleX(${Math.max(0, Math.min(1, remaining / duration))})`;
+      progressTrack.setAttribute("aria-valuenow", String(Math.round((remaining / duration) * 100)));
+    }
+
+    function tick() {
+      const now = Date.now();
+      if (now >= deadline) {
+        activeIndex = (activeIndex + 1) % colors.length;
+        remainingMs = getDuration(colors[activeIndex]);
+        deadline = now + remainingMs;
+      }
+      render();
+    }
+
+    toggleButton.addEventListener("click", () => {
+      if (running) {
+        remainingMs = Math.max(0, deadline - Date.now());
+        running = false;
+        clearInterval(intervalId);
+        intervalId = null;
+        toggleButton.textContent = "Resume simulation";
+      } else {
+        running = true;
+        deadline = Date.now() + remainingMs;
+        intervalId = window.setInterval(tick, 100);
+        toggleButton.textContent = "Pause simulation";
+      }
+      render();
+    });
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      activeIndex = 0;
+      remainingMs = getDuration(colors[activeIndex]);
+      toggleButton.textContent = "Start simulation";
+      render();
+    });
+
+    Object.entries(durationInputs).forEach(([color, input]) => {
+      input.addEventListener("input", () => {
+        if (!input.validity.valid || input.value === "") return;
+        if (colors[activeIndex] === color) {
+          remainingMs = getDuration(color);
+          if (running) deadline = Date.now() + remainingMs;
+        }
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
